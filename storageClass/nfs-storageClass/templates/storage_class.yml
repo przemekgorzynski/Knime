@@ -1,0 +1,16 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ .Values.nfs.storageClassName }}
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "{{ .Values.nfs.isDefaultClass }}"
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: {{ .Values.nfs.server }}
+  share: {{ .Values.nfs.share }}
+reclaimPolicy: {{ .Values.nfs.reclaimPolicy }}
+volumeBindingMode: {{ .Values.nfs.volumeBindingMode }}
+mountOptions:
+  {{- range .Values.nfs.mountOptions }}
+  - {{ . }}
+  {{- end }}

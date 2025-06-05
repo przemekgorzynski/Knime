@@ -1,0 +1,18 @@
+nfs:
+  isDefaultClass: true
+  storageClassName: nfs-csi
+  server: 10.0.0.10
+  share: /samba_shares/nfs
+  reclaimPolicy: Retain
+  volumeBindingMode: Immediate
+  mountOptions:
+    - nfsvers=3
+    - nolock
+
+pvc:
+  enabled: true
+  name: pvc-nfs-test
+  namespace: default
+  accessModes:
+    - ReadWriteOnce
+  size: 2Gi

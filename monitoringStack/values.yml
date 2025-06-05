@@ -1,0 +1,217 @@
+secrets:
+  secretManager: bitwarden-secretsmanager
+  refreshInterval: 30m
+  secretStoreRef:
+    grafana:
+      name: grafana-admin-password
+      namespace: monitoring
+      targetName: grafana-admin-credentials
+      userKey: admin-user           # username key
+      dataKey: admin-password       # password key
+    slackWebhookUrl:
+      name: slack-webhook-url
+      namespace: monitoring
+      targetName: slack-webhook-url
+      key: slack-webhook-url
+    teamsWebhookUrl:
+      name: teams-webhook-url
+      namespace: monitoring
+      targetName: teams-webhook-url
+      key: teams-webhook-url
+
+kube-prometheus-stack:
+  ## Provide a name to substitute for the full names of resources
+  fullnameOverride: ""
+
+  ## Provide a name in place of kube-prometheus-stack for `app:` labels
+  nameOverride: ""
+
+  ## Override the deployment namespace
+  namespaceOverride: ""
+
+  # Custom naming and metadata overrides
+  commonLabels:
+    environment: "stage"
+
+  ## Install Prometheus Operator CRDs
+  crds:
+    enabled: true
+
+  kubeStateMetrics:
+    enabled: true
+
+  defaultRules:
+    create: false
+
+  global:
+    imageRegistry: ""
+    imagePullSecrets: []
+
+  alertmanager:
+    enabled: true
+    annotations: {}
+    serviceAccount:
+      create: true
+      name: "alertmanager-sa"
+      annotations: {}
+      automountServiceAccountToken: true
+    podDisruptionBudget:
+      enabled: false
+      minAvailable: 1
+      # maxUnavailable: ""
+      unhealthyPodEvictionPolicy: AlwaysAllow
+    service:
+      enabled: true
+      annotations: {}
+      labels: {}
+      type: NodePort
+      port: 9093
+      targetPort: 9093
+      nodePort: 30903
+    config:
+      global:
+        resolve_timeout: 5m
+        slack_api_url: 'https://sekret_here'
+      route:
+        group_by: ['namespace']
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 3h
+        receiver: default
+        routes:
+          - receiver: SlackChannel
+            matchers:
+              - alertname = "InstanceDown"
+      receivers:
+        - name: default
+        - name: SlackChannel
+          slack_configs:
+          - channel: '#sandbox'
+            send_resolved: true
+    alertmanagerSpec:
+      externalUrl: ""
+      automountServiceAccountToken: true
+      logLevel: info
+      logFormat: logfmt
+      image:
+        registry: quay.io
+        repository: prometheus/alertmanager
+        tag: v0.28.1
+        sha: ""
+      securityContext:
+        runAsGroup: 2000
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
+      storage:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: local-path
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 2Gi
+
+  prometheus:
+    enabled: true
+    annotations: {}
+    serviceAccount:
+      create: true
+      name: "prometheus-sa"
+      annotations: {}
+      automountServiceAccountToken: true
+      podDisruptionBudget:
+        enabled: false
+        minAvailable: 1
+        # maxUnavailable: ""
+        unhealthyPodEvictionPolicy: AlwaysAllow
+    service:
+      enabled: true
+      annotations: {}
+      labels: {}
+      type: NodePort
+      port: 9090
+      targetPort: 9090
+      nodePort: 30900
+    serviceMonitor:
+      selfMonitor: false
+    prometheusSpec:
+      externalUrl: ""
+      persistentVolumeClaimRetentionPolicy: {}
+      automountServiceAccountToken: true
+      enableAdminAPI: false
+      scrapeInterval: ""
+      scrapeTimeout: ""
+      evaluationInterval: ""
+      retention: 7d
+      logLevel: info
+      logFormat: logfmt
+      image:
+        repository: prometheus/prometheus
+        tag: v3.4.0
+        sha: ""
+      portName: "http-web"
+      securityContext:
+        runAsGroup: 2000
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: local-path
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 2Gi
+      serviceMonitorSelectorNilUsesHelmValues: false
+      serviceMonitorNamespaceSelector: {}
+      serviceMonitorSelector:
+        matchExpressions:
+          - key: "app.kubernetes.io/name"
+            operator: In
+            values:
+              - "kube-state-metrics"
+      podMonitorSelectorNilUsesHelmValues: false
+      podMonitorNamespaceSelector: {}
+      podMonitorSelector: {}
+      ruleSelectorNilUsesHelmValues: false
+      ruleNamespaceSelector: {}
+      ruleSelector:
+        matchExpressions:
+          - key: "custom-rules"
+            operator: In
+            values:
+              - "availability-rules"
+      serviceAccountName: prometheus-sa-scrap-metrics
+      additionalScrapeConfigs: []
+
+  grafana:
+    enabled: true
+    adminUser: admin
+    adminPassword: prom-operator
+    # admin:
+    #   existingSecret: grafana-admin-credentials  # Reference the Secret name
+    #   userKey: admin-user                        # Key for username in the Secret
+    #   passwordKey: admin-password
+    serviceAccount:
+      create: true
+      autoMount: true
+    service:
+      enabled: true
+      annotations: {}
+      labels: {}
+      type: NodePort
+      nodePort: 30902
+    sidecar:
+      dashboards:
+        enabled: false
+      datasources:
+        enabled: false
+
