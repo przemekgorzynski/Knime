@@ -1,0 +1,196 @@
+kube-prometheus-stack:
+
+  ## Provide a name to substitute for the full names of resources
+  fullnameOverride: "monitoring"
+
+  ## Provide a name in place of kube-prometheus-stack for `app:` labels
+  nameOverride: ""
+
+  ## Override the deployment namespace
+  namespaceOverride: ""
+
+  # Custom naming and metadata overrides
+  commonLabels:
+    environment: "stage"
+
+  ## Install Prometheus Operator CRDs
+  crds:
+    enabled: true
+
+  kubeStateMetrics:
+    enabled: true
+
+  defaultRules:
+    create: false
+
+  global:
+    imageRegistry: ""
+    imagePullSecrets: []
+
+  alertmanager:
+    enabled: true
+    annotations: {}
+    serviceAccount:
+      create: true
+      name: "alertmanager-sa"
+      annotations: {}
+      automountServiceAccountToken: true
+    podDisruptionBudget:
+      enabled: false
+      minAvailable: 1
+      # maxUnavailable: ""
+      unhealthyPodEvictionPolicy: AlwaysAllow
+    service:
+      enabled: true
+      annotations: {}
+      labels: {}
+      type: NodePort
+      port: 9093
+      targetPort: 9093
+      nodePort: 30903
+    config:
+      global:
+        resolve_timeout: 5m
+        slack_api_url: 'https://hooks.slack.com/services/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'
+      route:
+        group_by: ['namespace']
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 3h
+        receiver: default
+        routes:
+          - receiver: InstanceDown
+            matchers:
+              - alertname = "InstanceDown"
+      receivers:
+        - name: default
+        - name: InstanceDown
+          slack_configs:
+          - channel: '#sandbox'
+            send_resolved: true
+
+    alertmanagerSpec:
+      externalUrl: ""
+      persistentVolumeClaimRetentionPolicy: {}
+      automountServiceAccountToken: true
+      logLevel: info
+      logFormat: logfmt
+      image:
+        registry: quay.io
+        repository: prometheus/alertmanager
+        tag: v0.28.1
+        sha: ""
+      securityContext:
+        runAsGroup: 2000
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
+      storage:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: local-path
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 2Gi
+          selector: {}
+
+  prometheus:
+    enabled: true
+    annotations: {}
+    serviceAccount:
+      create: true
+      name: "prometheus-sa"
+      annotations: {}
+      automountServiceAccountToken: true
+      podDisruptionBudget:
+        enabled: false
+        minAvailable: 1
+        # maxUnavailable: ""
+        unhealthyPodEvictionPolicy: AlwaysAllow
+    service:
+      enabled: true
+      annotations: {}
+      labels: {}
+      type: NodePort
+      port: 9090
+      targetPort: 9090
+      nodePort: 30900
+    serviceMonitor:
+      selfMonitor: false
+    prometheusSpec:
+      externalUrl: ""
+      persistentVolumeClaimRetentionPolicy: {}
+      automountServiceAccountToken: true
+      enableAdminAPI: false
+      scrapeInterval: ""
+      scrapeTimeout: ""
+      evaluationInterval: ""
+      retention: 7d
+      logLevel: info
+      logFormat: logfmt
+      image:
+        repository: prometheus/prometheus
+        tag: v3.4.0
+        sha: ""
+      portName: "http-web"
+      securityContext:
+        runAsGroup: 2000
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: local-path
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 2Gi
+      serviceMonitorSelectorNilUsesHelmValues: false
+      serviceMonitorNamespaceSelector: {}
+      serviceMonitorSelector:
+        matchExpressions:
+          - key: "app.kubernetes.io/name"
+            operator: In
+            values:
+              - "kube-state-metrics"
+      podMonitorSelectorNilUsesHelmValues: false
+      podMonitorNamespaceSelector: {}
+      podMonitorSelector: {}
+      ruleSelectorNilUsesHelmValues: false
+      ruleNamespaceSelector: {}
+      ruleSelector:
+        matchExpressions:
+          - key: "custom-rules"
+            operator: In
+            values:
+              - "availability-rules"
+      serviceAccountName: prometheus-sa-scrap-metrics
+      additionalScrapeConfigs: []
+
+  grafana:
+    enabled: true
+    adminUser: admin
+    adminPassword: prom-operator
+    serviceAccount:
+      create: true
+      autoMount: true
+    service:
+      enabled: true
+      annotations: {}
+      labels: {}
+      type: NodePort
+      nodePort: 30902
+    sidecar:
+      dashboards:
+        enabled: false
+      datasources:
+        enabled: false
+

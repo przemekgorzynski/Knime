@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: availability-rules
+  namespace: {{ .Release.Namespace }}
+  labels:
+    custom-rules: availability-rules
+spec:
+  groups:
+    - name: availability.rules
+      rules:
+        - alert: InstanceDown
+          expr: absent(up{job=~".+"})
+          for: 1m
+          labels:
+            severity: 'critical'
+          annotations:
+            title: 'Instance {{ "{{ $labels.instance }}" }} down'
+            description: '{{ "{{ $labels.instance }}" }} of job {{ "{{ $labels.job }}" }} has been down for more than 1 minute.'
