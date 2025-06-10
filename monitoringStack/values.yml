@@ -3,11 +3,11 @@ secrets:
   refreshInterval: 30m
   secretStoreRef:
     grafana:
-      name: grafana-admin-password
-      namespace: monitoring
-      targetName: grafana-admin-credentials
-      userKey: admin-user           # username key
-      dataKey: admin-password       # password key
+      name: grafana-admin-password              # Bitwarden secret name
+      namespace: monitoring                     # Target secret namespace
+      targetName: grafana-admin-credentials     # Targt secret name
+      userKey: admin-user                       # Secret username key
+      passwordKey: admin-password               # Secret password key
     slackWebhookUrl:
       name: slack-webhook-url
       namespace: monitoring
@@ -194,12 +194,12 @@ kube-prometheus-stack:
 
   grafana:
     enabled: true
-    adminUser: admin
-    adminPassword: prom-operator
-    # admin:
-    #   existingSecret: grafana-admin-credentials  # Reference the Secret name
-    #   userKey: admin-user                        # Key for username in the Secret
-    #   passwordKey: admin-password
+    # adminUser: admin
+    # adminPassword: prom-operator
+    admin:
+      existingSecret: grafana-admin-credentials   # Reference the Secret name
+      userKey: admin-user                         # Key for username in the Secret
+      passwordKey: admin-password                 # Key for password in the Secret
     serviceAccount:
       create: true
       autoMount: true
