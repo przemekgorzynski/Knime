@@ -1,3 +1,5 @@
 charts/
 temp/
 *lock
+.env
+.venv

@@ -1,0 +1,16 @@
+busybox:
+  source:
+    image: docker.io/busybox
+    tag: 1.37.0
+    sha: sha256:f85340bf132ae937d2c2a763b8335c9bab35d6e8293f70f606b9c6178d84f42b
+  target:
+    image: pgorzynski/busybox
+    tag: 1.37.0
+nginx:
+  source:
+    image: docker.io/nginx
+    tag: 1.28.0
+    sha: sha256:20555a07052bb7a1a0ed233d5dba2bdafb75e537948fadbc0e1fef151088dcdd
+  target:
+    image: pgorzynski/nginx
+    tag: 1.28.0
